@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Utilisateur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+        .sidebar-collapsed {
+            width: 80px;
+        }
+        .sidebar-collapsed .nav-text {
+            display: none;
+        }
+        .sidebar-collapsed .logo-text {
+            display: none;
+        }
+        .sidebar-collapsed .nav-item {
+            justify-content: center;
+        }
+        .content-area {
+            transition: all 0.3s ease;
+        }
+        .content-expanded {
+            margin-left: 80px;
+        }
+        .user-avatar {
+            transition: all 0.3s ease;
+        }
+        .user-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            border: 2px solid white;
+        }
+        .status-online {
+            background-color: #10B981;
+        }
+        .status-offline {
+            background-color: #EF4444;
+        }
+        .status-away {
+            background-color: #F59E0B;
+        }
+        .badge {
+            font-size: 0.7rem;
+            padding: 2px 5px;
+        }
+        .dropdown-menu {
+            transform-origin: top right;
+            transform: scale(0);
+            opacity: 0;
+            transition: all 0.2s ease;
+            display: none;
+        }
+        .dropdown-menu.show {
+            transform: scale(1);
+            opacity: 1;
+            display: block;
+        }
+        .animate-bounce {
+            animation: bounce 1.5s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(-5px);
+            }
+            50% {
+                transform: translateY(5px);
+            }
+        }
+        /* Modal styles */
+        .modal {
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .progress-bar {
+            height: 6px;
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+        .task-completed {
+            text-decoration: line-through;
+            color: #9CA3AF;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Sidebar -->
+    <div class="sidebar fixed inset-y-0 left-0 bg-blue-800 text-white w-64 shadow-lg z-50">
+        <div class="flex items-center justify-between p-4 border-b border-blue-700">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-user-circle text-2xl"></i>
+                <span class="logo-text text-xl font-bold">Mon Espace</span>
+            </div>
+            <button id="toggleSidebar" class="text-white focus:outline-none">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <div class="p-4">
+            <div class="flex items-center space-x-3 mb-6 p-2 bg-blue-700 rounded-lg">
+                <div class="relative">
+                    <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="User" class="w-10 h-10 rounded-full">
+                    <span class="user-status status-online"></span>
+                </div>
+                <div>
+                    <div class="font-medium">Sophie Martin</div>
+                    <div class="text-xs text-blue-200">Utilisateur Premium</div>
+                </div>
+            </div>
+            <nav>
+                <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg bg-blue-700 mb-1">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="nav-text">Tableau de bord</span>
+                </a>
+                <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 mb-1">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="nav-text">Agenda</span>
+                </a>
+                <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 mb-1">
+                    <i class="fas fa-tasks"></i>
+                    <span class="nav-text">Tâches</span>
+                    <span class="badge bg-blue-500 rounded-full ml-auto">5</span>
+                </a>
+                <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 mb-1">
+                    <i class="fas fa-envelope"></i>
+                    <span class="nav-text">Messages</span>
+                    <span class="badge bg-red-500 rounded-full ml-auto animate-bounce">3</span>
+                </a>
+                <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 mb-1">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="nav-text">Statistiques</span>
+                </a>
+                <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 mb-1">
+                    <i class="fas fa-cog"></i>
+                    <span class="nav-text">Paramètres</span>
+                </a>
+            </nav>
+        </div>
+        <div class="absolute bottom-0 w-full p-4 border-t border-blue-700">
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="nav-text">Déconnexion</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content-area ml-64 min-h-screen">
+        <!-- Top Navigation -->
+        <header class="bg-white shadow-sm">
+            <div class="flex justify-between items-center p-4">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-xl font-semibold text-gray-800">
+                        <i class="fas fa-tachometer-alt mr-2 text-blue-600"></i> Tableau de Bord
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="notifBtn" class="p-2 rounded-full hover:bg-gray-100 relative">
+                            <i class="fas fa-bell text-gray-600"></i>
+                            <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                        <div id="notifDropdown" class="dropdown-menu absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg py-1 z-50">
+                            <div class="px-4 py-2 border-b border-gray-200">
+                                <h3 class="text-sm font-medium text-gray-700">Notifications (3)</h3>
+                            </div>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-calendar-check text-blue-500"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">Réunion à 15h</p>
+                                        <p class="text-xs text-gray-500">Dans 30 minutes</p>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-envelope text-green-500"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">Nouveau message</p>
+                                        <p class="text-xs text-gray-500">De Jean Dupont</p>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-tasks text-purple-500"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">Tâche échue</p>
+                                        <p class="text-xs text-gray-500">Rapport mensuel</p>
+                                    </div>
+                                </div>
+                            </a>
+                            <div class="px-4 py-2 text-center border-t border-gray-200">
+                                <a href="#" class="text-xs font-medium text-blue-600 hover:text-blue-800">Voir toutes les notifications</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <button id="profileBtn" class="flex items-center space-x-2 focus:outline-none">
+                            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="User" class="w-8 h-8 rounded-full">
+                            <span class="hidden md:inline-block font-medium">Sophie</span>
+                            <i class="fas fa-chevron-down text-xs hidden md:inline-block"></i>
+                        </button>
+                        <div id="profileDropdown" class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mon profil</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Paramètres</a>
+                            <div class="border-t border-gray-200"></div>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Déconnexion</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-6">
+            <!-- Welcome Banner -->
+            <div class="bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg shadow p-6 text-white mb-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-2">Bonjour, Sophie Martin !</h2>
+                        <p class="opacity-90">Voici votre tableau de bord personnel. Vous avez 5 tâches à accomplir aujourd'hui.</p>
+                    </div>
+                    <button class="mt-4 md:mt-0 bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition">
+                        <i class="fas fa-plus mr-2"></i> Nouvelle tâche
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Tâches complétées</p>
+                            <h3 class="text-2xl font-bold text-gray-800">24/30</h3>
+                            <p class="text-green-500 text-sm flex items-center">
+                                <i class="fas fa-arrow-up mr-1"></i> 80% d'efficacité
+                            </p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar bg-green-500 rounded-full h-2" style="width: 80%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Projets en cours</p>
+                            <h3 class="text-2xl font-bold text-gray-800">5</h3>
+                            <p class="text-blue-500 text-sm flex items-center">
+                                <i class="fas fa-info-circle mr-1"></i> 2 en retard
+                            </p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-project-diagram text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar bg-blue-500 rounded-full h-2" style="width: 60%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Messages non lus</p>
+                            <h3 class="text-2xl font-bold text-gray-800">12</h3>
+                            <p class="text-purple-500 text-sm flex items-center">
+                                <i class="fas fa-clock mr-1"></i> 3 urgents
+                            </p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-envelope text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar bg-purple-500 rounded-full h-2" style="width: 40%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Événements à venir</p>
+                            <h3 class="text-2xl font-bold text-gray-800">7</h3>
+                            <p class="text-yellow-500 text-sm flex items-center">
+                                <i class="fas fa-calendar-day mr-1"></i> 1 aujourd'hui
+                            </p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-calendar-alt text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar bg-yellow-500 rounded-full h-2" style="width: 25%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts and Tasks Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Activity Chart -->
+                <div class="lg:col-span-2 bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">Activité hebdomadaire</h2>
+                        <select class="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option>Cette semaine</option>
+                            <option>La semaine dernière</option>
+                            <option>Ce mois-ci</option>
+                        </select>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Quick Tasks -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">Tâches rapides</h2>
+                        <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            <i class="fas fa-plus mr-1"></i> Ajouter
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="task1" class="h-4 w-4 text-blue-600 border-gray
+</body>
+</html>
